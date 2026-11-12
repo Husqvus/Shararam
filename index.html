@@ -1,0 +1,2094 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2c3e50">
+<title>Шарарам (Локации + HUGO BOSS + Визуал)</title>
+<style>
+    * {
+        margin: 0; padding: 0; box-sizing: border-box;
+        user-select: none; -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+    html, body {
+        width: 100%; height: 100%;
+        overflow: hidden;
+        font-family: 'Arial', sans-serif;
+        background: #1a1a2e;
+        position: fixed;
+        overscroll-behavior: none;
+    }
+    body { display: flex; justify-content: center; align-items: center; }
+
+    #game-wrapper {
+        position: relative;
+        width: 900px; height: 600px;
+        transform-origin: center center;
+    }
+    #game-container {
+        position: relative;
+        width: 900px; height: 600px;
+        background: #87CEEB;
+        border-radius: 20px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        overflow: hidden;
+        border: 8px solid #fff;
+    }
+
+    /* ===== СЛОИ ЛОКАЦИЙ ===== */
+    #sky {
+        position: absolute; inset: 0;
+        background: #87CEEB;
+        transition: background 1.2s ease;
+        z-index: 0;
+    }
+
+    /* Визуальные слои (декорации локации) */
+    #bg-layer {
+        position: absolute; inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+    .bg-object {
+        position: absolute;
+        pointer-events: none;
+        transition: opacity 1s ease, transform 1.2s ease;
+    }
+    .bg-object.hidden { opacity: 0; transform: scale(0.8); }
+
+    /* Облака */
+    .cloud {
+        position: absolute;
+        background: rgba(255,255,255,0.85);
+        border-radius: 50px;
+        z-index: 1;
+        pointer-events: none;
+        transition: opacity 1s ease;
+    }
+    .cloud::before, .cloud::after {
+        content: '';
+        position: absolute;
+        background: inherit;
+        border-radius: 50%;
+    }
+    .cloud1 { width: 100px; height: 40px; top: 90px; left: 120px; }
+    .cloud1::before { width: 50px; height: 50px; top: -20px; left: 15px; }
+    .cloud1::after  { width: 60px; height: 60px; top: -30px; left: 45px; }
+    .cloud2 { width: 130px; height: 50px; top: 160px; left: 640px; }
+    .cloud2::before { width: 60px; height: 60px; top: -25px; left: 20px; }
+    .cloud2::after  { width: 70px; height: 70px; top: -35px; left: 60px; }
+    .cloud3 { width: 80px; height: 35px; top: 60px; left: 400px; }
+    .cloud3::before { width: 45px; height: 45px; top: -18px; left: 12px; }
+    .cloud3::after  { width: 55px; height: 55px; top: -28px; left: 38px; }
+
+    /* Звёзды (для космоса) */
+    .star {
+        position: absolute;
+        background: #fff;
+        border-radius: 50%;
+        z-index: 0;
+        transition: opacity 1s;
+    }
+
+    /* Волны (для пляжа) */
+    .wave {
+        position: absolute;
+        left: 0; right: 0;
+        height: 6px;
+        background: rgba(255,255,255,0.5);
+        border-radius: 10px;
+        z-index: 0;
+        transition: opacity 1s;
+    }
+
+    /* Горы (для горной локации) */
+    .mountain {
+        position: absolute;
+        bottom: 150px;
+        width: 0; height: 0;
+        border-left: 100px solid transparent;
+        border-right: 100px solid transparent;
+        border-bottom: 180px solid #708090;
+        z-index: 0;
+        transition: opacity 1s;
+    }
+    .mountain::after {
+        content: '';
+        position: absolute;
+        top: 180px;
+        left: -100px;
+        width: 200px; height: 180px;
+        background: linear-gradient(to bottom, #708090, #4a5560);
+        clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    }
+    .mountain .snow {
+        position: absolute;
+        top: 0; left: -30px;
+        width: 60px; height: 50px;
+        background: #fff;
+        clip-path: polygon(50% 0, 100% 100%, 0 100%);
+        z-index: 1;
+    }
+
+    #ground {
+        position: absolute; bottom: 0; left: 0;
+        width: 100%; height: 150px;
+        background: linear-gradient(to bottom, #7CFC00, #32CD32);
+        border-top: 5px solid #228B22;
+        z-index: 1;
+        transition: background 1.2s, border-color 1.2s;
+    }
+    #sun {
+        position: absolute; top: 30px; right: 50px;
+        width: 80px; height: 80px; background: #FFD700;
+        border-radius: 50%; box-shadow: 0 0 40px #FFD700; z-index: 0;
+        transition: background 1.2s, box-shadow 1.2s, top 1.2s, right 1.2s;
+    }
+
+    /* ===== ИГРОК ===== */
+    #player {
+        position: absolute; width: 80px; height: 80px;
+        background: #FF69B4; border-radius: 50%;
+        border: 4px solid #fff;
+        box-shadow: 0 10px 10px rgba(0,0,0,0.2);
+        z-index: 10; cursor: pointer;
+        display: flex; justify-content: center; align-items: center;
+        transition: background 0.6s;
+    }
+    .eyes { display: flex; gap: 15px; position: absolute; top: 20px; }
+    .eye {
+        width: 15px; height: 20px; background: white;
+        border-radius: 50%; position: relative; border: 1px solid #333;
+    }
+    .pupil {
+        width: 8px; height: 8px; background: black;
+        border-radius: 50%; position: absolute; top: 5px; left: 4px;
+    }
+    #player-hat {
+        position: absolute; top: -22px; left: 50%;
+        transform: translateX(-50%);
+        font-size: 32px; display: none;
+        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+    }
+    /* HUGO BOSS костюм */
+    #player.hugo {
+        border-radius: 20px 20px 50% 50%;
+        background: #111 !important;
+        box-shadow: 0 10px 10px rgba(0,0,0,0.5), inset 0 0 0 3px #333;
+    }
+    #player.hugo .eyes {
+        top: 25px;
+    }
+    #player.hugo::before {
+        content: '👔';
+        position: absolute;
+        bottom: -10px; left: 50%;
+        transform: translateX(-50%);
+        font-size: 28px;
+    }
+    #player.hugo::after {
+        content: '🕶️';
+        position: absolute;
+        top: 22px; left: 50%;
+        transform: translateX(-50%);
+        font-size: 22px;
+        z-index: 11;
+    }
+
+    /* ===== NPC ===== */
+    .npc {
+        position: absolute; width: 70px; height: 70px;
+        border-radius: 50%; border: 4px solid #fff; z-index: 5;
+        display: flex; justify-content: center; align-items: center;
+        cursor: pointer; transition: transform 0.2s;
+    }
+    .npc:active { transform: scale(0.95); }
+    .npc-label {
+        position: absolute; top: -32px; background: white;
+        padding: 2px 8px; border-radius: 10px;
+        font-size: 11px; font-weight: bold; white-space: nowrap;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .npc-quest-marker {
+        position: absolute;
+        top: -50px; left: 50%;
+        transform: translateX(-50%);
+        font-size: 24px;
+        animation: markerBounce 1s ease-in-out infinite;
+    }
+    @keyframes markerBounce {
+        0%,100% { transform: translateX(-50%) translateY(0); }
+        50% { transform: translateX(-50%) translateY(-5px); }
+    }
+
+    /* Кнопка Игротеки — крупная, всегда видна */
+    #npc-funpark {
+        position: absolute;
+        bottom: 150px; left: 50%;
+        transform: translateX(-50%);
+        width: 80px; height: 80px;
+        border-radius: 50%;
+        border: 4px solid #FFD700;
+        background: linear-gradient(135deg, #FF6EC7, #9B59B6);
+        display: flex; justify-content: center; align-items: center;
+        font-size: 36px;
+        z-index: 15;
+        cursor: pointer;
+        box-shadow: 0 0 25px rgba(255,215,0,0.7),
+                    0 8px 20px rgba(0,0,0,0.3);
+        animation: funparkPulse 2s ease-in-out infinite;
+    }
+    #npc-funpark:active { transform: translateX(-50%) scale(0.92); }
+    #npc-funpark .npc-label {
+        top: -34px;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: #2c0b3a;
+        font-size: 13px;
+        border: 2px solid #fff;
+    }
+    @keyframes funparkPulse {
+        0%,100% { box-shadow: 0 0 25px rgba(255,215,0,0.7), 0 8px 20px rgba(0,0,0,0.3); }
+        50%     { box-shadow: 0 0 45px rgba(255,215,0,1), 0 8px 20px rgba(0,0,0,0.3); }
+    }
+
+    /* ===== UI ===== */
+    #ui-top {
+        position: absolute; top: 20px; left: 20px;
+        display: flex; gap: 8px; z-index: 100;
+        flex-wrap: wrap; max-width: 880px;
+    }
+    .currency {
+        background: rgba(255,255,255,0.9);
+        padding: 7px 12px; border-radius: 20px;
+        font-weight: bold; display: flex; align-items: center; gap: 4px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border: 2px solid #FFD700; font-size: 14px;
+    }
+    .currency .icon { font-size: 18px; }
+    #bonus-btn {
+        background: linear-gradient(135deg, #FF1493, #FF4500);
+        color: #fff; font-weight: bold;
+        padding: 7px 14px; border-radius: 20px;
+        border: 2px solid #FFD700;
+        cursor: pointer; font-size: 14px;
+        box-shadow: 0 4px 10px rgba(255,69,0,0.4), 0 0 15px rgba(255,215,0,0.5);
+        display: flex; align-items: center; gap: 5px;
+        animation: bonusGlow 1.5s ease-in-out infinite;
+    }
+    #bonus-btn:active { transform: scale(0.93); }
+    @keyframes bonusGlow {
+        0%,100% { box-shadow: 0 4px 10px rgba(255,69,0,0.4), 0 0 15px rgba(255,215,0,0.5); }
+        50%     { box-shadow: 0 4px 10px rgba(255,69,0,0.4), 0 0 25px rgba(255,215,0,0.9); }
+    }
+
+    #location-badge {
+        position: absolute;
+        top: 20px; right: 20px;
+        background: rgba(0,0,0,0.75);
+        border: 3px solid #FFD700;
+        border-radius: 16px;
+        padding: 8px 14px;
+        color: #fff;
+        text-align: center;
+        z-index: 100;
+        box-shadow: 0 0 20px rgba(255,215,0,0.5);
+    }
+    #location-name { font-size: 14px; font-weight: bold; color: #FFD700; }
+    #location-mult {
+        font-size: 20px; font-weight: bold;
+        color: #FF4500;
+        text-shadow: 0 0 10px rgba(255,69,0,0.8);
+    }
+
+    #location-switcher {
+        position: absolute;
+        bottom: 20px; left: 20px;
+        display: flex; gap: 6px;
+        z-index: 100;
+    }
+    .loc-btn {
+        width: 54px; height: 54px;
+        border-radius: 50%;
+        border: 3px solid #fff;
+        background: rgba(0,0,0,0.5);
+        font-size: 26px;
+        cursor: pointer;
+        display: flex; justify-content: center; align-items: center;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    .loc-btn:active { transform: scale(0.92); }
+    .loc-btn.active {
+        background: rgba(255,215,0,0.4);
+        border-color: #FFD700;
+        box-shadow: 0 0 18px #FFD700;
+        transform: scale(1.1);
+    }
+    .loc-btn .loc-x {
+        position: absolute;
+        bottom: -6px; right: -6px;
+        background: #FF4500;
+        color: #fff;
+        font-size: 10px;
+        font-weight: bold;
+        padding: 1px 5px;
+        border-radius: 8px;
+        border: 1px solid #fff;
+    }
+
+    #shop-btn {
+        position: absolute; bottom: 20px; right: 20px;
+        width: 60px; height: 60px; background: #FF4500;
+        border-radius: 50%; display: flex; justify-content: center; align-items: center;
+        color: white; font-size: 30px; cursor: pointer;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        border: 3px solid #fff; z-index: 100;
+    }
+    #shop-btn:active { transform: scale(0.9); }
+
+    #dialog {
+        position: absolute; bottom: 100px; left: 50%;
+        transform: translateX(-50%);
+        width: 500px; max-width: 90%;
+        background: rgba(255,255,255,0.97);
+        border-radius: 15px; padding: 18px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        border: 4px solid #FFD700; z-index: 200;
+        display: none; flex-direction: column; gap: 10px;
+        text-align: center;
+    }
+    #dialog p { font-size: 16px; color: #333; line-height: 1.4; }
+    #dialog button {
+        padding: 12px 20px; background: #32CD32;
+        border: none; border-radius: 20px; color: white;
+        font-weight: bold; font-size: 15px; cursor: pointer;
+        border-bottom: 4px solid #228B22;
+        min-height: 44px;
+    }
+    #dialog button:active { border-bottom: 0; transform: translateY(4px); }
+    #dialog button.secondary {
+        background: #FF4500;
+        border-bottom-color: #B22222;
+    }
+
+    #notification {
+        position: absolute; top: 80px; left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.85); color: white;
+        padding: 10px 20px; border-radius: 20px;
+        font-size: 15px; z-index: 400; display: none;
+        transition: opacity 0.4s;
+        max-width: 80%; text-align: center;
+        white-space: pre-line;
+    }
+
+    .tree {
+        position: absolute; bottom: 150px;
+        width: 20px; height: 80px; background: #8B4513; z-index: 2;
+        transition: opacity 0.6s, transform 0.6s;
+    }
+    .tree::after {
+        content: ''; position: absolute; top: -60px; left: -30px;
+        width: 80px; height: 80px; background: #228B22; border-radius: 50%;
+        transition: background 0.6s;
+    }
+    #tree1 { left: 200px; }
+    #tree2 { left: 550px; height: 60px; }
+    #tree2::after { width: 60px; height: 60px; left: -20px; top: -40px; }
+
+    .modal-overlay {
+        position: absolute; inset: 0;
+        background: rgba(0,0,0,0.75);
+        z-index: 500;
+        display: none;
+        justify-content: center; align-items: center;
+        padding: 10px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .modal-overlay.show {
+        display: flex;
+        opacity: 1;
+    }
+    .modal-window {
+        background: linear-gradient(180deg,#2c0b3a 0%, #4a1a63 100%);
+        border-radius: 20px;
+        border: 4px solid #FFD700;
+        box-shadow: 0 0 40px rgba(255,215,0,0.6);
+        padding: 20px 18px 18px; position: relative;
+        color: #fff; text-align: center;
+        max-height: 95%;
+        overflow-y: auto;
+        width: 100%;
+        max-width: 680px;
+        transform: scale(0.9);
+        transition: transform 0.3s;
+    }
+    .modal-overlay.show .modal-window { transform: scale(1); }
+    .modal-window::-webkit-scrollbar { width: 6px; }
+    .modal-window::-webkit-scrollbar-thumb { background: #FFD700; border-radius: 3px; }
+    .modal-close {
+        position: absolute; top: 10px; right: 12px;
+        width: 40px; height: 40px; border-radius: 50%;
+        background: #FF4500; color: #fff; border: 2px solid #fff;
+        font-size: 20px; font-weight: bold; cursor: pointer;
+        z-index: 10;
+    }
+    .modal-close:active { background: #cc3700; }
+
+    #shop-title {
+        font-size: 22px; font-weight: bold; margin-bottom: 4px;
+        color: #FFD700; text-shadow: 2px 2px 0 #000;
+        padding-right: 40px;
+    }
+    #shop-subtitle { font-size: 12px; opacity: 0.8; margin-bottom: 12px; }
+    #shop-tabs {
+        display: flex; justify-content: center; gap: 5px;
+        margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .shop-tab {
+        padding: 9px 12px; border-radius: 18px;
+        background: rgba(255,255,255,0.08);
+        border: 2px solid rgba(255,215,0,0.4);
+        color: #d8b8ff; font-weight: bold; font-size: 12px;
+        cursor: pointer; transition: all 0.15s;
+        min-height: 40px;
+    }
+    .shop-tab.active {
+        background: rgba(255,215,0,0.25);
+        color: #FFD700; border-color: #FFD700;
+        box-shadow: 0 0 12px rgba(255,215,0,0.4);
+    }
+    #shop-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        max-height: 48vh;
+        overflow-y: auto;
+        padding: 4px;
+    }
+    #shop-grid::-webkit-scrollbar { width: 6px; }
+    #shop-grid::-webkit-scrollbar-thumb { background: #FFD700; border-radius: 3px; }
+    .shop-item {
+        background: rgba(255,255,255,0.07);
+        border: 2px solid rgba(255,215,0,0.35);
+        border-radius: 12px;
+        padding: 8px 6px;
+        display: flex; flex-direction: column; align-items: center;
+        gap: 4px;
+        position: relative;
+    }
+    .shop-item.owned {
+        border-color: #32CD32;
+        background: rgba(50,205,50,0.12);
+    }
+    .shop-item.owned::after {
+        content: '✓';
+        position: absolute; top: 3px; right: 6px;
+        color: #32CD32; font-weight: bold; font-size: 14px;
+    }
+    .shop-item.hugo {
+        border-color: #FFD700;
+        background: linear-gradient(135deg, rgba(0,0,0,0.6), rgba(40,40,40,0.8));
+        box-shadow: 0 0 20px rgba(255,215,0,0.5);
+    }
+    .shop-item.hugo .item-name {
+        color: #FFD700;
+        text-shadow: 0 0 8px rgba(255,215,0,0.8);
+        font-weight: 900;
+        letter-spacing: 1px;
+    }
+    .item-icon { font-size: 28px; line-height: 1; }
+    .item-name { font-size: 11px; font-weight: bold; color: #fff; text-align: center; }
+    .item-desc { font-size: 9px; color: #d8b8ff; text-align: center; min-height: 20px; }
+    .item-price {
+        font-size: 11px; font-weight: bold; color: #FFD700;
+        background: rgba(0,0,0,0.4);
+        padding: 2px 7px; border-radius: 9px;
+    }
+    .buy-btn {
+        padding: 7px 10px; border-radius: 12px;
+        background: linear-gradient(180deg, #32CD32, #228B22);
+        border: none; color: #fff; font-weight: bold;
+        font-size: 11px; cursor: pointer;
+        box-shadow: 0 2px 0 #1a5e1a;
+        width: 100%;
+        min-height: 34px;
+    }
+    .buy-btn:active { transform: translateY(2px); box-shadow: none; }
+    .buy-btn:disabled { background: #555; cursor: not-allowed; box-shadow: none; opacity: 0.6; }
+    .buy-btn.equip {
+        background: linear-gradient(180deg, #4169E1, #27408B);
+        box-shadow: 0 2px 0 #1a2a5e;
+    }
+    .buy-btn.equipped {
+        background: linear-gradient(180deg, #FFD700, #B8860B);
+        box-shadow: 0 2px 0 #8B6508;
+        color: #2c0b3a;
+    }
+
+    /* Игротека */
+    #funpark-title {
+        font-size: 22px; font-weight: bold; margin-bottom: 4px;
+        color: #FFD700; text-shadow: 2px 2px 0 #000;
+        padding-right: 40px;
+    }
+    #funpark-subtitle { font-size: 12px; opacity: 0.9; margin-bottom: 12px; }
+    #funpark-tabs {
+        display: flex; justify-content: center; gap: 4px;
+        margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .tab-btn {
+        padding: 9px 14px; border-radius: 18px 18px 0 0;
+        background: rgba(255,255,255,0.08);
+        border: 2px solid rgba(255,215,0,0.4);
+        border-bottom: none;
+        color: #d8b8ff; font-weight: bold; font-size: 12px;
+        cursor: pointer;
+        min-height: 40px;
+    }
+    .tab-btn.active {
+        background: rgba(255,215,0,0.25);
+        color: #FFD700; border-color: #FFD700;
+        box-shadow: 0 -2px 12px rgba(255,215,0,0.4);
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .wheel-wrap {
+        position: relative; width: 220px; height: 220px;
+        margin: 6px auto 12px;
+    }
+    #wheel-pointer {
+        position: absolute; top: -18px; left: 50%;
+        transform: translateX(-50%);
+        width: 0; height: 0;
+        border-left: 14px solid transparent;
+        border-right: 14px solid transparent;
+        border-top: 24px solid #FFD700;
+        z-index: 10;
+        filter: drop-shadow(0 0 6px #FFD700);
+    }
+    #wheel {
+        width: 100%; height: 100%; border-radius: 50%;
+        border: 6px solid #FFD700;
+        box-shadow: 0 0 25px rgba(255,215,0,0.5);
+        transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 1);
+        position: relative;
+    }
+    #wheel-center {
+        position: absolute; top: 50%; left: 50%;
+        width: 60px; height: 60px;
+        transform: translate(-50%,-50%);
+        background: radial-gradient(circle, #FFD700, #B8860B);
+        border-radius: 50%;
+        border: 4px solid #fff;
+        display: flex; justify-content: center; align-items: center;
+        font-size: 18px; font-weight: bold;
+        color: #2c0b3a;
+        z-index: 5;
+        box-shadow: 0 0 15px rgba(255,215,0,0.8);
+        cursor: pointer;
+    }
+    #wheel-center:active { transform: translate(-50%,-50%) scale(0.95); }
+    #wheel-legend {
+        display: flex; flex-wrap: wrap; justify-content: center;
+        gap: 4px 10px; margin-bottom: 8px; font-size: 10px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 3px; }
+    .legend-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #fff; }
+
+    .bet-row {
+        display: flex; justify-content: center; align-items: center;
+        gap: 6px; margin: 8px 0; font-size: 13px;
+        flex-wrap: wrap;
+    }
+    .bet-btn {
+        width: 42px; height: 42px; border-radius: 50%;
+        border: 2px solid #FFD700; background: rgba(255,215,0,0.15);
+        color: #FFD700; font-weight: bold; font-size: 15px;
+        cursor: pointer;
+    }
+    .bet-btn:active { transform: scale(0.9); background: rgba(255,215,0,0.35); }
+    .bet-btn.big {
+        background: rgba(255,69,0,0.2);
+        border-color: #FF4500; color: #FF6347;
+        width: 52px;
+    }
+    .bet-input {
+        width: 86px; padding: 8px 6px;
+        background: #000; border-radius: 10px;
+        border: 2px solid #FFD700;
+        font-size: 15px; font-weight: bold; color: #FFD700;
+        text-align: center;
+        -moz-appearance: textfield;
+    }
+    .bet-input::-webkit-outer-spin-button,
+    .bet-input::-webkit-inner-spin-button {
+        -webkit-appearance: none; margin: 0;
+    }
+    .bet-input:focus { outline: none; border-color: #FF6347; }
+
+    #funpark-result {
+        min-height: 36px; font-size: 15px; font-weight: bold;
+        margin-top: 6px; color: #FFD700; line-height: 1.2;
+    }
+    #funpark-history {
+        margin-top: 6px; font-size: 11px; opacity: 0.75;
+        min-height: 16px;
+    }
+    @keyframes winPulse {
+        0%,100% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+    }
+    .win-flash { animation: winPulse 0.4s ease 3; }
+
+    .rb-board {
+        display: flex; justify-content: center; gap: 8px;
+        margin: 12px 0;
+        flex-wrap: wrap;
+    }
+    .rb-cell {
+        width: 90px; height: 110px;
+        border-radius: 14px;
+        border: 4px solid #FFD700;
+        cursor: pointer;
+        display: flex; flex-direction: column;
+        justify-content: center; align-items: center;
+        gap: 4px;
+        font-weight: bold; font-size: 16px;
+        color: #fff;
+        text-shadow: 2px 2px 3px #000;
+        transition: all 0.15s;
+        position: relative;
+    }
+    .rb-cell:active { transform: scale(0.95); }
+    .rb-cell.red { background: linear-gradient(180deg, #FF3333, #990000); }
+    .rb-cell.black { background: linear-gradient(180deg, #333, #000); }
+    .rb-cell.green { background: linear-gradient(180deg, #32CD32, #0a6b0a); }
+    .rb-cell .rb-mult {
+        font-size: 22px; color: #FFD700;
+        background: rgba(0,0,0,0.3);
+        padding: 2px 10px; border-radius: 10px;
+    }
+    .rb-cell.picked {
+        outline: 4px solid #FFD700;
+        outline-offset: 2px;
+        transform: scale(1.06);
+    }
+    .rb-cell.disabled {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    #rb-result {
+        min-height: 50px;
+        font-size: 16px; font-weight: bold;
+        color: #FFD700;
+        margin-top: 8px;
+    }
+    #rb-prev {
+        display: flex; justify-content: center; gap: 4px;
+        margin: 8px 0; min-height: 20px;
+        flex-wrap: wrap;
+    }
+    #rb-prev .rb-dot {
+        width: 16px; height: 16px;
+    }
+    .rb-dot {
+        width: 12px; height: 12px;
+        border-radius: 50%;
+        border: 1px solid #fff;
+    }
+    .rb-dot.red { background: #FF3333; }
+    .rb-dot.black { background: #111; }
+    .rb-dot.green { background: #32CD32; }
+    #rb-spinning {
+        display: none;
+        text-align: center;
+        font-size: 40px;
+        margin: 8px 0;
+        animation: spin 0.5s linear infinite;
+    }
+    @keyframes spin {
+        from { transform: rotate(0); }
+        to { transform: rotate(360deg); }
+    }
+
+    #slot-machine {
+        background: linear-gradient(180deg, #1a0a24, #0d0512);
+        border: 4px solid #FFD700;
+        border-radius: 16px;
+        padding: 10px;
+        margin: 4px auto 6px;
+        width: 100%;
+        max-width: 470px;
+        box-shadow: 0 0 25px rgba(255,215,0,0.4),
+                    inset 0 0 20px rgba(255,215,0,0.1);
+    }
+    #slot-reels {
+        display: flex; justify-content: center; gap: 8px;
+        padding: 8px; background: #000;
+        border-radius: 10px;
+        border: 3px solid #FFD700;
+        box-shadow: inset 0 0 15px rgba(255,215,0,0.25);
+    }
+    .reel {
+        flex: 1; max-width: 100px; height: 110px;
+        background: linear-gradient(180deg, #fff8dc, #f5e6b8);
+        border-radius: 10px;
+        border: 2px solid #B8860B;
+        overflow: hidden; position: relative;
+        box-shadow: inset 0 8px 12px rgba(0,0,0,0.25),
+                    inset 0 -8px 12px rgba(0,0,0,0.25);
+    }
+    .reel-strip {
+        position: absolute; left: 0; right: 0; top: 0;
+        display: flex; flex-direction: column;
+    }
+    .reel-symbol {
+        height: 110px;
+        display: flex; justify-content: center; align-items: center;
+        font-size: 60px; line-height: 1;
+        filter: drop-shadow(0 3px 3px rgba(0,0,0,0.2));
+    }
+    #slot-payline {
+        height: 4px; margin: -59px auto 55px;
+        background: linear-gradient(90deg, transparent, #FF4500, transparent);
+        border-radius: 2px;
+        position: relative; z-index: 3; pointer-events: none;
+    }
+    #slot-spin-btn {
+        display: block; margin: 6px auto 0;
+        padding: 12px 36px;
+        background: linear-gradient(180deg, #FF4500, #cc3700);
+        border: 3px solid #FFD700;
+        border-radius: 30px;
+        color: #fff; font-weight: bold; font-size: 18px;
+        cursor: pointer;
+        box-shadow: 0 6px 0 #8b1a00, 0 10px 18px rgba(0,0,0,0.5);
+        min-height: 52px;
+        min-width: 180px;
+    }
+    #slot-spin-btn:active {
+        transform: translateY(4px);
+        box-shadow: 0 2px 0 #8b1a00, 0 4px 8px rgba(0,0,0,0.5);
+    }
+    #slot-spin-btn:disabled {
+        opacity: 0.5; cursor: not-allowed; filter: grayscale(0.5);
+    }
+    #slot-info {
+        display: flex; justify-content: space-around;
+        margin-top: 8px; font-size: 11px; color: #d8b8ff;
+    }
+    #slot-info b { color: #FFD700; }
+    #slot-paytable {
+        display: flex; flex-wrap: wrap; justify-content: center;
+        gap: 4px 8px; margin-top: 8px;
+        font-size: 10px; color: #e0d0ff;
+    }
+    .pay-row {
+        display: flex; align-items: center; gap: 3px;
+        background: rgba(255,215,0,0.08);
+        padding: 2px 6px; border-radius: 10px;
+        border: 1px solid rgba(255,215,0,0.3);
+    }
+    .pay-row b { color: #FFD700; }
+    @keyframes reelWin {
+        0%,100% { box-shadow: inset 0 0 15px rgba(255,215,0,0.3); }
+        50% { box-shadow: inset 0 0 35px rgba(255,215,0,0.9), 0 0 25px #FFD700; }
+    }
+    .reel.winning {
+        animation: reelWin 0.5s ease 3;
+        border-color: #FFD700;
+    }
+
+    #quest-panel {
+        position: absolute;
+        top: 80px; right: 20px;
+        background: rgba(0,0,0,0.75);
+        border: 3px solid #FFD700;
+        border-radius: 14px;
+        padding: 8px 12px;
+        color: #fff;
+        z-index: 99;
+        max-width: 220px;
+        font-size: 11px;
+        display: none;
+    }
+    #quest-panel.show { display: block; }
+    #quest-panel .q-title {
+        color: #FFD700;
+        font-weight: bold;
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+    #quest-panel .q-progress { color: #fff; font-size: 11px; line-height: 1.3; }
+    #quest-panel .q-reward { margin-top: 4px; color: #32FF32; font-weight: bold; }
+
+    @media (max-width: 600px) {
+        #quest-panel { max-width: 160px; font-size: 10px; padding: 6px 8px; top: 150px; }
+        #shop-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+</head>
+<body>
+
+<div id="game-wrapper">
+    <div id="game-container">
+        <div id="sky"></div>
+
+        <!-- Визуальный слой -->
+        <div id="bg-layer">
+            <div class="cloud cloud1"></div>
+            <div class="cloud cloud2"></div>
+            <div class="cloud cloud3"></div>
+        </div>
+
+        <div id="sun"></div>
+        <div id="ground"></div>
+        <div id="tree1" class="tree"></div>
+        <div id="tree2" class="tree"></div>
+
+        <div id="player" style="left:100px; bottom:150px;">
+            <div id="player-hat">🎩</div>
+            <div class="eyes">
+                <div class="eye"><div class="pupil"></div></div>
+                <div class="eye"><div class="pupil"></div></div>
+            </div>
+        </div>
+
+        <!-- Кнопка Игротеки — крупная, всегда видна -->
+        <div id="npc-funpark" onclick="openFunpark()">
+            <div class="npc-label">🎡 Игротека</div>
+            🎠
+        </div>
+
+        <div id="ui-top">
+            <div class="currency"><span class="icon">😊</span><span id="smiles-count">100</span></div>
+            <div class="currency" style="border-color:#FF4500;">
+                <span class="icon">💎</span><span id="rubies-count">30</span>
+            </div>
+            <button id="bonus-btn" onclick="claimBonus()">🎁 +500 💎</button>
+        </div>
+
+        <div id="location-badge">
+            <div id="location-name">🌿 Лужайка</div>
+            <div id="location-mult">×1</div>
+        </div>
+
+        <div id="quest-panel">
+            <div class="q-title">📜 Квест</div>
+            <div class="q-progress" id="q-progress"></div>
+            <div class="q-reward" id="q-reward"></div>
+        </div>
+
+        <div id="location-switcher">
+            <button class="loc-btn active" data-loc="meadow" onclick="switchLocation('meadow')">🌿<span class="loc-x">×1</span></button>
+            <button class="loc-btn" data-loc="beach" onclick="switchLocation('beach')">🏖️<span class="loc-x">×2</span></button>
+            <button class="loc-btn" data-loc="mountains" onclick="switchLocation('mountains')">🏔️<span class="loc-x">×3</span></button>
+            <button class="loc-btn" data-loc="space" onclick="switchLocation('space')">🚀<span class="loc-x">×5</span></button>
+        </div>
+
+        <div id="shop-btn" onclick="openShop()">🛒</div>
+
+        <div id="dialog">
+            <p id="dialog-text">Привет!</p>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                <button id="dialog-btn" onclick="closeDialog()">Ок</button>
+                <button id="dialog-btn2" class="secondary" onclick="closeDialog()" style="display:none;">Отмена</button>
+            </div>
+        </div>
+
+        <div id="notification"></div>
+
+        <div class="modal-overlay" id="shop-overlay">
+            <div class="modal-window" id="shop-window">
+                <button class="modal-close" onclick="closeShop()">✕</button>
+                <div id="shop-title">🛒 Магазин Смешариков</div>
+                <div id="shop-subtitle">Скины, аксессуары и бустеры!</div>
+                <div id="shop-tabs">
+                    <button class="shop-tab active" data-tab="skins" onclick="switchShopTab('skins')">🎨 Скины</button>
+                    <button class="shop-tab" data-tab="hats" onclick="switchShopTab('hats')">🎩 Шляпы</button>
+                    <button class="shop-tab" data-tab="boosters" onclick="switchShopTab('boosters')">⚡ Бустеры</button>
+                    <button class="shop-tab" data-tab="fun" onclick="switchShopTab('fun')">🎁 Разное</button>
+                </div>
+                <div id="shop-grid"></div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="funpark-overlay">
+            <div class="modal-window" id="funpark-window">
+                <button class="modal-close" onclick="closeFunpark()">✕</button>
+                <div id="funpark-title">🎡 Игротека «Луна-Парк»</div>
+                <div id="funpark-subtitle">Множитель локации применяется к призам! Билетик от 5 до 9999 💎</div>
+
+                <div id="funpark-tabs">
+                    <button class="tab-btn active" data-tab="wheel" onclick="switchTab('wheel')">🎡 Колесо</button>
+                    <button class="tab-btn" data-tab="rb" onclick="switchTab('rb')">🔴⚫ Цвет</button>
+                    <button class="tab-btn" data-tab="slots" onclick="switchTab('slots')">🎰 Барабаны</button>
+                </div>
+
+                <div class="tab-content active" id="tab-wheel">
+                    <div class="wheel-wrap">
+                        <div id="wheel-pointer"></div>
+                        <div id="wheel"></div>
+                        <div id="wheel-center" onclick="spinWheel()">GO</div>
+                    </div>
+                    <div id="wheel-legend"></div>
+                    <div class="bet-row">
+                        <span>Билетик:</span>
+                        <button class="bet-btn" onclick="changeBet('wheel', -100)">−100</button>
+                        <button class="bet-btn" onclick="changeBet('wheel', -5)">−</button>
+                        <input type="number" id="bet-display" class="bet-input" value="10"
+                               min="5" max="9999" onchange="setBet('wheel', this.value)">
+                        <button class="bet-btn" onclick="changeBet('wheel', 5)">+</button>
+                        <button class="bet-btn big" onclick="changeBet('wheel', 100)">+100</button>
+                        <button class="bet-btn big" onclick="maxBet('wheel')" style="width:auto;padding:0 10px;font-size:11px;">MAX</button>
+                    </div>
+                    <div id="funpark-result">Выбери билетик и нажми GO!</div>
+                    <div id="funpark-history"></div>
+                </div>
+
+                <div class="tab-content" id="tab-rb">
+                    <div style="font-size:14px;color:#FFD700;font-weight:bold;margin:6px 0;">
+                        Угадай цвет! Красное/Чёрное = ×2, Зеро = ×14
+                    </div>
+                    <div id="rb-prev"></div>
+                    <div class="rb-board">
+                        <div class="rb-cell red" onclick="pickColor('red')">
+                            🔴<br>КРАСНОЕ
+                            <div class="rb-mult">×2</div>
+                        </div>
+                        <div class="rb-cell green" onclick="pickColor('green')">
+                            🟢<br>ЗЕРО
+                            <div class="rb-mult">×14</div>
+                        </div>
+                        <div class="rb-cell black" onclick="pickColor('black')">
+                            ⚫<br>ЧЁРНОЕ
+                            <div class="rb-mult">×2</div>
+                        </div>
+                    </div>
+                    <div id="rb-spinning">🎲</div>
+                    <div class="bet-row">
+                        <span>Билетик:</span>
+                        <button class="bet-btn" onclick="changeBet('rb', -100)">−100</button>
+                        <button class="bet-btn" onclick="changeBet('rb', -5)">−</button>
+                        <input type="number" id="rb-bet-display" class="bet-input" value="10"
+                               min="5" max="9999" onchange="setBet('rb', this.value)">
+                        <button class="bet-btn" onclick="changeBet('rb', 5)">+</button>
+                        <button class="bet-btn big" onclick="changeBet('rb', 100)">+100</button>
+                        <button class="bet-btn big" onclick="maxBet('rb')" style="width:auto;padding:0 10px;font-size:11px;">MAX</button>
+                    </div>
+                    <div id="rb-result">Выбери цвет!</div>
+                </div>
+
+                <div class="tab-content" id="tab-slots">
+                    <div id="slot-machine">
+                        <div id="slot-reels">
+                            <div class="reel"><div class="reel-strip" id="reel0"></div></div>
+                            <div class="reel"><div class="reel-strip" id="reel1"></div></div>
+                            <div class="reel"><div class="reel-strip" id="reel2"></div></div>
+                        </div>
+                        <div id="slot-payline"></div>
+                        <div class="bet-row" style="margin-top:12px;">
+                            <span>Билетик:</span>
+                            <button class="bet-btn" onclick="changeBet('slots', -100)">−100</button>
+                            <button class="bet-btn" onclick="changeBet('slots', -5)">−</button>
+                            <input type="number" id="slot-bet-display" class="bet-input" value="10"
+                                   min="5" max="9999" onchange="setBet('slots', this.value)">
+                            <button class="bet-btn" onclick="changeBet('slots', 5)">+</button>
+                            <button class="bet-btn big" onclick="changeBet('slots', 100)">+100</button>
+                            <button class="bet-btn big" onclick="maxBet('slots')" style="width:auto;padding:0 10px;font-size:11px;">MAX</button>
+                        </div>
+                        <button id="slot-spin-btn" onclick="spinSlots()">КРУТИТЬ!</button>
+                        <div id="slot-info">
+                            <span>Призы: <b id="slot-win">0</b> 💎</span>
+                            <span>Попыток: <b id="slot-spins">0</b></span>
+                        </div>
+                    </div>
+                    <div id="slot-paytable"></div>
+                    <div id="funpark-result-slots" style="min-height:34px;font-size:15px;font-weight:bold;margin-top:8px;color:#FFD700;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/* =========================================================
+   МАСШТАБИРОВАНИЕ
+   ========================================================= */
+function fitGame() {
+    const wrap = document.getElementById('game-wrapper');
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const scale = Math.min(vw / 916, vh / 616);
+    wrap.style.transform = `scale(${scale})`;
+}
+window.addEventListener('resize', fitGame);
+window.addEventListener('orientationchange', () => setTimeout(fitGame, 200));
+fitGame();
+
+/* =========================================================
+   ЛОКАЦИИ
+   ========================================================= */
+const LOCATIONS = {
+    meadow: {
+        name: '🌿 Лужайка',
+        mult: 1,
+        sky: 'linear-gradient(to bottom, #87CEEB 0%, #B0E0E6 100%)',
+        ground: 'linear-gradient(to bottom, #7CFC00, #32CD32)',
+        groundBorder: '#228B22',
+        sun: '#FFD700',
+        sunShadow: '0 0 40px #FFD700',
+        sunPos: { top: '30px', right: '50px' },
+        treeColor: '#228B22',
+        treeOpacity: 1,
+        npcs: ['krosh', 'sovunya'],
+    },
+    beach: {
+        name: '🏖️ Пляж',
+        mult: 2,
+        sky: 'linear-gradient(to bottom, #FFE4B5 0%, #FFA07A 50%, #87CEEB 100%)',
+        ground: 'linear-gradient(to bottom, #FFE4B5 0%, #F4A460 60%, #D2B48C 100%)',
+        groundBorder: '#D2691E',
+        sun: '#FF8C00',
+        sunShadow: '0 0 60px #FF8C00',
+        sunPos: { top: '80px', right: '30px' },
+        treeColor: '#3CB371',
+        treeOpacity: 0.6,
+        npcs: ['krosh', 'barash', 'nyusha'],
+    },
+    mountains: {
+        name: '🏔️ Горы',
+        mult: 3,
+        sky: 'linear-gradient(to bottom, #4682B4 0%, #B0C4DE 100%)',
+        ground: 'linear-gradient(to bottom, #D3D3D3 0%, #A9A9A9 50%, #696969 100%)',
+        groundBorder: '#555',
+        sun: '#FFF8DC',
+        sunShadow: '0 0 50px #FFF8DC',
+        sunPos: { top: '40px', right: '100px' },
+        treeColor: '#2F4F4F',
+        treeOpacity: 0.8,
+        npcs: ['krosh', 'pin', 'sovunya'],
+    },
+    space: {
+        name: '🚀 Космос',
+        mult: 5,
+        sky: 'linear-gradient(to bottom, #0a0a2e 0%, #1a0a3e 50%, #2a0a4e 100%)',
+        ground: 'linear-gradient(to bottom, #2a1a4e 0%, #0a0a2e 100%)',
+        groundBorder: '#4B0082',
+        sun: '#E0E0FF',
+        sunShadow: '0 0 80px #E0E0FF',
+        sunPos: { top: '50px', right: '200px' },
+        treeColor: '#4B0082',
+        treeOpacity: 0,
+        npcs: ['krosh', 'pin', 'ejik'],
+    },
+};
+
+const NPCS = {
+    krosh:   { name: 'Крош',   color: '#00BFFF', emoji: '🐰' },
+    sovunya: { name: 'Совунья',color: '#9370DB', emoji: '🦉' },
+    barash:  { name: 'Бараш',  color: '#DDA0DD', emoji: '🐑' },
+    nyusha:  { name: 'Нюша',   color: '#FF69B4', emoji: '🐷' },
+    pin:     { name: 'Пин',    color: '#808080', emoji: '🐧' },
+    ejik:    { name: 'Ёжик',   color: '#8B4513', emoji: '🦔' },
+};
+
+/* =========================================================
+   СОСТОЯНИЕ
+   ========================================================= */
+let smiles = 100;
+let rubies = 500;
+let currentLocation = 'meadow';
+let wheelBet = 10;
+let slotBet = 10;
+let rbBet = 10;
+let spinning = false;
+let slotSpinning = false;
+let rbSpinning = false;
+let currentRotation = 0;
+
+const playerState = {
+    skin: 'skin_pink',
+    hat: null,
+    hasPet: false,
+    hasTitle: false,
+    nightMode: false,
+    boostX2: false,
+};
+const ownedItems = new Set(['skin_pink']);
+
+const QUESTS = {
+    krosh:   { npc: 'krosh',   title: 'Помоги Крошу',  desc: 'Кликни по Крошу ещё раз, чтобы сдать квест.', reward: 100, type: 'click', progress: 0, target: 1, completed: false, active: false },
+    sovunya: { npc: 'sovunya', title: 'Урок Совуньи',  desc: 'Покрути колесо в Игротеке 3 раза', reward: 150, type: 'wheel', progress: 0, target: 3, completed: false, active: false },
+    barash:  { npc: 'barash',  title: 'Стихи Бараша',  desc: 'Сыграй в Цвет (красное/чёрное) 2 раза', reward: 200, type: 'rb', progress: 0, target: 2, completed: false, active: false },
+    nyusha:  { npc: 'nyusha',  title: 'Наряд Нюши',    desc: 'Купи и надень шляпу в магазине', reward: 250, type: 'hat', progress: 0, target: 1, completed: false, active: false },
+    pin:     { npc: 'pin',     title: 'Изобретение Пина', desc: 'Прокрути барабаны 5 раз', reward: 300, type: 'slots', progress: 0, target: 5, completed: false, active: false },
+    ejik:    { npc: 'ejik',    title: 'Космический Ёжик', desc: 'Открой локацию Космос', reward: 500, type: 'space', progress: 0, target: 1, completed: false, active: false },
+};
+
+const player = document.getElementById('player');
+const container = document.getElementById('game-container');
+const skyEl = document.getElementById('sky');
+const groundEl = document.getElementById('ground');
+const sunEl = document.getElementById('sun');
+const dialog = document.getElementById('dialog');
+const dialogText = document.getElementById('dialog-text');
+const dialogBtn = document.getElementById('dialog-btn');
+const dialogBtn2 = document.getElementById('dialog-btn2');
+const smilesEl = document.getElementById('smiles-count');
+const rubiesEl = document.getElementById('rubies-count');
+const notificationEl = document.getElementById('notification');
+const playerHat = document.getElementById('player-hat');
+const questPanel = document.getElementById('quest-panel');
+const qProgress = document.getElementById('q-progress');
+const qReward = document.getElementById('q-reward');
+
+const MAX_BET = 9999;
+const W = 900, H = 600, GROUND = 150;
+
+/* =========================================================
+   ПЕРЕМЕЩЕНИЕ
+   ========================================================= */
+container.addEventListener('click', (e) => {
+    if (e.target.closest('#ui-top') || e.target.closest('#shop-btn') ||
+        e.target.closest('#dialog') || e.target.closest('.npc') ||
+        e.target.closest('#npc-funpark') ||
+        e.target.closest('.modal-overlay') || e.target.closest('#location-switcher') ||
+        e.target.closest('#location-badge') || e.target.closest('#quest-panel')) return;
+
+    const rect = container.getBoundingClientRect();
+    const cx = (e.clientX - rect.left) / (rect.width / W);
+    const cy = (e.clientY - rect.top) / (rect.height / H);
+
+    if (cy > H - GROUND - 40) {
+        let tx = Math.max(0, Math.min(cx - 40, W - 80));
+        let ty = Math.max(GROUND, Math.min(H - cy - 40, GROUND + 150));
+        player.style.transition = 'left 0.7s ease-in-out, bottom 0.7s ease-in-out';
+        player.style.left = tx + 'px';
+        player.style.bottom = ty + 'px';
+    }
+});
+
+/* =========================================================
+   ВИЗУАЛЬНЫЕ СЛОИ ЛОКАЦИЙ
+   ========================================================= */
+let visualElements = [];
+
+function clearVisuals() {
+    visualElements.forEach(el => el.remove());
+    visualElements = [];
+}
+
+function buildVisuals(locKey) {
+    clearVisuals();
+    const layer = document.getElementById('bg-layer');
+
+    if (locKey === 'meadow') {
+        // Облака видны, звёзды/волны/горы скрыты
+        document.querySelectorAll('.cloud').forEach(c => c.style.opacity = '1');
+    } else if (locKey === 'beach') {
+        document.querySelectorAll('.cloud').forEach(c => c.style.opacity = '0.4');
+        // Волны
+        for (let i = 0; i < 5; i++) {
+            const w = document.createElement('div');
+            w.className = 'wave';
+            w.style.bottom = (150 + i * 25) + 'px';
+            w.style.opacity = '0';
+            layer.appendChild(w);
+            visualElements.push(w);
+            setTimeout(() => w.style.opacity = '0.7', 100 + i * 100);
+        }
+    } else if (locKey === 'mountains') {
+        document.querySelectorAll('.cloud').forEach(c => c.style.opacity = '0.6');
+        // Горы
+        const positions = [80, 320, 560, 760];
+        positions.forEach((pos, i) => {
+            const m = document.createElement('div');
+            m.className = 'mountain';
+            m.style.left = pos + 'px';
+            m.style.opacity = '0';
+            m.style.transform = 'translateY(50px)';
+            m.style.borderBottomColor = i % 2 ? '#5a6570' : '#708090';
+            const snow = document.createElement('div');
+            snow.className = 'snow';
+            m.appendChild(snow);
+            layer.appendChild(m);
+            visualElements.push(m);
+            setTimeout(() => {
+                m.style.opacity = '0.85';
+                m.style.transform = 'translateY(0)';
+            }, 100 + i * 150);
+        });
+    } else if (locKey === 'space') {
+        document.querySelectorAll('.cloud').forEach(c => c.style.opacity = '0');
+        // Звёзды
+        for (let i = 0; i < 50; i++) {
+            const s = document.createElement('div');
+            s.className = 'star';
+            s.style.left = Math.random() * 900 + 'px';
+            s.style.top = Math.random() * 450 + 'px';
+            const size = 1 + Math.random() * 3;
+            s.style.width = size + 'px';
+            s.style.height = size + 'px';
+            s.style.opacity = '0';
+            s.style.transitionDelay = (Math.random() * 0.5) + 's';
+            layer.appendChild(s);
+            visualElements.push(s);
+            setTimeout(() => s.style.opacity = '0.3 + ' + (Math.random() * 0.7), 100);
+        }
+    }
+}
+
+/* =========================================================
+   ПЕРЕКЛЮЧЕНИЕ ЛОКАЦИЙ
+   ========================================================= */
+function switchLocation(locKey) {
+    if (!LOCATIONS[locKey] || locKey === currentLocation) return;
+    currentLocation = locKey;
+    const loc = LOCATIONS[locKey];
+
+    skyEl.style.background = loc.sky;
+    groundEl.style.background = loc.ground;
+    groundEl.style.borderTopColor = loc.groundBorder;
+    sunEl.style.background = loc.sun;
+    sunEl.style.boxShadow = loc.sunShadow;
+    sunEl.style.top = loc.sunPos.top;
+    sunEl.style.right = loc.sunPos.right;
+
+    document.querySelectorAll('.tree').forEach(t => {
+        t.style.opacity = loc.treeOpacity;
+    });
+
+    document.getElementById('location-name').textContent = loc.name;
+    document.getElementById('location-mult').textContent = '×' + loc.mult;
+
+    document.querySelectorAll('.loc-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.loc === locKey);
+    });
+
+    buildVisuals(locKey);
+    renderNPCs(locKey);
+    updateQuestPanel();
+
+    if (locKey === 'space' && QUESTS.ejik.active && !QUESTS.ejik.completed) {
+        QUESTS.ejik.progress++;
+        updateQuestPanel();
+        if (QUESTS.ejik.progress >= QUESTS.ejik.target) completeQuest('ejik');
+    }
+    notify(`🗺️ ${loc.name} | Множитель ×${loc.mult}`);
+}
+
+function renderNPCs(locKey) {
+    document.querySelectorAll('.npc').forEach(n => n.remove());
+    const loc = LOCATIONS[locKey];
+    const positions = [
+        { left: 320, bottom: 150 },
+        { left: 580, bottom: 150 },
+        { left: 220, bottom: 150 },
+        { left: 720, bottom: 150 },
+    ];
+
+    loc.npcs.forEach((npcKey, i) => {
+        const npc = NPCS[npcKey];
+        const el = document.createElement('div');
+        el.className = 'npc';
+        el.id = 'npc-' + npcKey;
+        el.style.background = npc.color;
+        el.style.left = positions[i].left + 'px';
+        el.style.bottom = positions[i].bottom + 'px';
+
+        const quest = QUESTS[npcKey];
+        let marker = '';
+        if (quest && !quest.completed) {
+            marker = `<div class="npc-quest-marker">${quest.active ? '❗' : '❓'}</div>`;
+        }
+
+        el.innerHTML = `
+            <div class="npc-label">${npc.name}</div>
+            <div class="eyes" style="top:15px; gap:10px;">
+                <div class="eye" style="width:12px; height:16px;"><div class="pupil" style="width:6px; height:6px; top:4px; left:3px;"></div></div>
+                <div class="eye" style="width:12px; height:16px;"><div class="pupil" style="width:6px; height:6px; top:4px; left:3px;"></div></div>
+            </div>
+            <div style="position:absolute;top:8px;right:8px;font-size:18px;">${npc.emoji}</div>
+            ${marker}
+        `;
+
+        el.onclick = () => handleNPC(npcKey);
+        container.appendChild(el);
+    });
+}
+
+/* =========================================================
+   NPC / КВЕСТЫ
+   ========================================================= */
+function handleNPC(npcKey) {
+    const quest = QUESTS[npcKey];
+    const npc = NPCS[npcKey];
+
+    if (!quest) {
+        showDialog(`${npc.name}: Привет! Как дела?`, "Пока!", closeDialog);
+        return;
+    }
+    if (quest.completed) {
+        showDialog(`${npc.name}: Спасибо, дружище! Приходи ещё.`, "Пока!", closeDialog);
+        return;
+    }
+    if (quest.active && quest.progress >= quest.target) {
+        completeQuest(npcKey);
+        return;
+    }
+    if (quest.active) {
+        showDialog(
+            `${npc.name}: ${quest.title}\n\n${quest.desc}\n\nПрогресс: ${quest.progress}/${quest.target}`,
+            "Понял!", closeDialog
+        );
+        return;
+    }
+    showDialog(
+        `${npc.name}: Привет! Хочешь заработать ${quest.reward} 💎?\n\n«${quest.title}»\n${quest.desc}`,
+        "Взять квест!",
+        () => {
+            quest.active = true;
+            closeDialog();
+            notify(`📜 Квест «${quest.title}» взят!`);
+            renderNPCs(currentLocation);
+            updateQuestPanel();
+        }
+    );
+}
+
+function completeQuest(npcKey) {
+    const quest = QUESTS[npcKey];
+    const npc = NPCS[npcKey];
+    if (quest.completed) return;
+
+    quest.completed = true;
+    quest.active = false;
+
+    let reward = quest.reward;
+    if (playerState.boostX2) reward *= 2;
+
+    rubies += reward;
+    updateUI();
+    updateQuestPanel();
+    renderNPCs(currentLocation);
+
+    showDialog(
+        `${npc.name}: Молодец! Вот твоя награда: +${reward} 💎!`,
+        "Ура!", closeDialog
+    );
+    notify(`🎉 Квест выполнен! +${reward} 💎`);
+}
+
+function updateQuestPanel() {
+    const activeQuests = Object.values(QUESTS).filter(q => q.active && !q.completed);
+    if (activeQuests.length === 0) {
+        questPanel.classList.remove('show');
+        return;
+    }
+    questPanel.classList.add('show');
+    const q = activeQuests[0];
+    qProgress.textContent = `${q.title}\n${q.progress}/${q.target}`;
+    qReward.textContent = `+${q.reward} 💎`;
+}
+
+function progressQuest(type, amount = 1) {
+    Object.values(QUESTS).forEach(q => {
+        if (q.active && !q.completed && q.type === type) {
+            q.progress = Math.min(q.target, q.progress + amount);
+            updateQuestPanel();
+            if (q.progress >= q.target) completeQuest(q.npc);
+        }
+    });
+}
+
+/* =========================================================
+   UI
+   ========================================================= */
+function showDialog(text, btnText, cb, btn2Text, cb2) {
+    dialogText.textContent = text;
+    dialogText.style.whiteSpace = 'pre-line';
+    dialogBtn.textContent = btnText;
+    dialogBtn.onclick = cb;
+    if (btn2Text) {
+        dialogBtn2.style.display = 'inline-block';
+        dialogBtn2.textContent = btn2Text;
+        dialogBtn2.onclick = cb2 || closeDialog;
+    } else {
+        dialogBtn2.style.display = 'none';
+    }
+    dialog.style.display = 'flex';
+}
+function closeDialog() { dialog.style.display = 'none'; }
+
+function updateUI() {
+    smilesEl.textContent = smiles;
+    rubiesEl.textContent = rubies;
+    ['bet-display', 'slot-bet-display', 'rb-bet-display'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || document.activeElement === el) return;
+        if (id === 'bet-display') el.value = wheelBet;
+        if (id === 'slot-bet-display') el.value = slotBet;
+        if (id === 'rb-bet-display') el.value = rbBet;
+    });
+}
+
+function notify(msg) {
+    notificationEl.textContent = msg;
+    notificationEl.style.display = 'block';
+    notificationEl.style.opacity = '1';
+    clearTimeout(notificationEl._t);
+    notificationEl._t = setTimeout(() => {
+        notificationEl.style.opacity = '0';
+        setTimeout(() => notificationEl.style.display = 'none', 400);
+    }, 2000);
+}
+
+const BONUS_AMOUNT = 500;
+function claimBonus() {
+    rubies += BONUS_AMOUNT;
+    updateUI();
+    notify(`🎁 Бонус получен! +${BONUS_AMOUNT} 💎`);
+}
+
+/* =========================================================
+   МАГАЗИН
+   ========================================================= */
+const SHOP_ITEMS = {
+    skins: [
+        { id: 'skin_pink',    icon: '🩷', name: 'Розовый',    desc: 'Классика', price: 0,   color: '#FF69B4' },
+        { id: 'skin_blue',    icon: '💙', name: 'Голубой',    desc: 'Как у Кроша', price: 100, color: '#00BFFF' },
+        { id: 'skin_green',   icon: '💚', name: 'Зелёный',    desc: 'Как у Ёжика', price: 100, color: '#32CD32' },
+        { id: 'skin_purple',  icon: '💜', name: 'Фиолетовый', desc: 'Загадочный', price: 200, color: '#9B59B6' },
+        { id: 'skin_gold',    icon: '💛', name: 'Золотой',    desc: 'VIP!', price: 500, color: '#FFD700' },
+        { id: 'skin_rainbow', icon: '🌈', name: 'Радужный',   desc: 'Легендарный!', price: 1000, color: 'rainbow' },
+        { id: 'skin_hugo',    icon: '🕴️', name: 'HUGO BOSS',  desc: 'Деловой костюм', price: 2000, color: 'hugo', special: true },
+    ],
+    hats: [
+        { id: 'hat_top',    icon: '🎩', name: 'Цилиндр',  desc: 'Элегантно!', price: 150 },
+        { id: 'hat_crown',  icon: '👑', name: 'Корона',   desc: 'Для королей', price: 400 },
+        { id: 'hat_cap',    icon: '🧢', name: 'Кепка',    desc: 'Спортивно', price: 100 },
+        { id: 'hat_party',  icon: '🥳', name: 'Колпак',   desc: 'Праздник!', price: 80 },
+        { id: 'hat_grad',   icon: '🎓', name: 'Академ.',  desc: 'Умник!', price: 200 },
+        { id: 'hat_helmet', icon: '⛑️', name: 'Шлем',     desc: 'Безопасность', price: 250 },
+    ],
+    boosters: [
+        { id: 'boost_smile',  icon: '😊', name: '+50 Смешинок',  desc: 'Мгновенно', price: 50,  effect: 'smiles50' },
+        { id: 'boost_rubies', icon: '💎', name: '+100 Румбиков', desc: 'Мгновенно', price: 300, effect: 'rubies100' },
+        { id: 'boost_x2',     icon: '✖️', name: '×2 награда',    desc: 'Квесты ×2', price: 500, effect: 'x2' },
+        { id: 'boost_skip',   icon: '⏩', name: 'Скип квеста',   desc: 'Сдать активный', price: 150, effect: 'skip' },
+    ],
+    fun: [
+        { id: 'fun_fireworks',icon: '🎆', name: 'Салют',         desc: 'Фейерверк', price: 100, effect: 'fireworks' },
+        { id: 'fun_pet',      icon: '🐣', name: 'Питомец',       desc: 'Идёт за тобой', price: 300, effect: 'pet' },
+        { id: 'fun_title',    icon: '🏆', name: 'Титул «Богач»', desc: 'Статус', price: 500, effect: 'title' },
+    ],
+};
+
+const shopOverlay = document.getElementById('shop-overlay');
+const shopGrid = document.getElementById('shop-grid');
+let currentShopTab = 'skins';
+
+function openShop() {
+    shopOverlay.classList.add('show');
+    renderShop();
+}
+function closeShop() { shopOverlay.classList.remove('show'); }
+function switchShopTab(tab) {
+    currentShopTab = tab;
+    document.querySelectorAll('.shop-tab').forEach(b =>
+        b.classList.toggle('active', b.dataset.tab === tab));
+    renderShop();
+}
+function renderShop() {
+    const items = SHOP_ITEMS[currentShopTab];
+    shopGrid.innerHTML = '';
+    items.forEach(item => {
+        const owned = ownedItems.has(item.id);
+        const div = document.createElement('div');
+        div.className = 'shop-item' + (owned ? ' owned' : '') + (item.special ? ' hugo' : '');
+
+        let btnHtml;
+        if (owned) {
+            const equipped = isEquipped(item.id);
+            if (item.id.startsWith('skin_')) {
+                btnHtml = `<button class="buy-btn ${equipped ? 'equipped' : 'equip'}" 
+                    onclick="equipSkin('${item.id}')">${equipped ? '✓ Надет' : 'Надеть'}</button>`;
+            } else if (item.id.startsWith('hat_')) {
+                btnHtml = `<button class="buy-btn ${equipped ? 'equipped' : 'equip'}" 
+                    onclick="equipHat('${item.id}')">${equipped ? '✓ Надет' : 'Надеть'}</button>`;
+            } else {
+                btnHtml = `<button class="buy-btn" disabled>Куплено</button>`;
+            }
+        } else {
+            btnHtml = `<button class="buy-btn" onclick="buyItem('${item.id}')">Купить</button>`;
+        }
+
+        div.innerHTML = `
+            <div class="item-icon">${item.icon}</div>
+            <div class="item-name">${item.name}</div>
+            <div class="item-desc">${item.desc}</div>
+            <div class="item-price">${item.price === 0 ? 'Бесплатно' : item.price + ' 💎'}</div>
+            ${btnHtml}
+        `;
+        shopGrid.appendChild(div);
+    });
+}
+
+function isEquipped(id) {
+    if (id.startsWith('skin_')) return playerState.skin === id;
+    if (id.startsWith('hat_')) return playerState.hat === id;
+    return false;
+}
+function getItem(id) {
+    for (const cat in SHOP_ITEMS) {
+        const found = SHOP_ITEMS[cat].find(x => x.id === id);
+        if (found) return found;
+    }
+    return null;
+}
+
+function buyItem(id) {
+    const item = getItem(id);
+    if (!item || ownedItems.has(id)) return;
+    if (rubies < item.price) {
+        notify("❌ Не хватает Румбиков! Жми 🎁 Бонус.");
+        return;
+    }
+    rubies -= item.price;
+    ownedItems.add(id);
+    updateUI();
+    notify(`✅ Куплено: ${item.name}`);
+
+    if (item.effect === 'smiles50') { smiles += 50; notify("+50 Смешинок!"); }
+    if (item.effect === 'rubies100') { rubies += 100; notify("+100 Румбиков!"); }
+    if (item.effect === 'x2') { playerState.boostX2 = true; }
+    if (item.effect === 'skip') {
+        const active = Object.values(QUESTS).find(q => q.active && !q.completed);
+        if (active) {
+            active.progress = active.target;
+            completeQuest(active.npc);
+        }
+    }
+    if (item.effect === 'fireworks') triggerFireworks();
+    if (item.effect === 'pet') { playerState.hasPet = true; spawnPet(); }
+    if (item.effect === 'title') playerState.hasTitle = true;
+
+    updateUI();
+    renderShop();
+}
+
+function equipSkin(id) {
+    const item = getItem(id);
+    if (!item) return;
+    playerState.skin = id;
+
+    player.classList.remove('hugo');
+
+    if (id === 'skin_hugo') {
+        player.style.background = '#111';
+        player.style.animation = '';
+        player.classList.add('hugo');
+    } else if (id === 'skin_rainbow') {
+        player.style.background = 'linear-gradient(45deg,#FF0000,#FF7F00,#FFFF00,#00FF00,#0000FF,#4B0082,#9400D3)';
+        player.style.backgroundSize = '400% 400%';
+        player.style.animation = 'rainbowSpin 3s linear infinite';
+        ensureRainbowKeyframe();
+    } else {
+        player.style.background = item.color;
+        player.style.animation = '';
+    }
+    notify(`🎨 Скин «${item.name}» надет!`);
+    renderShop();
+}
+function ensureRainbowKeyframe() {
+    if (document.getElementById('rainbow-style')) return;
+    const style = document.createElement('style');
+    style.id = 'rainbow-style';
+    style.textContent = `@keyframes rainbowSpin { 0% { background-position: 0% 50%; } 100% { background-position: 400% 50%; } }`;
+    document.head.appendChild(style);
+}
+function equipHat(id) {
+    const item = getItem(id);
+    if (!item) return;
+    if (playerState.hat === id) {
+        playerState.hat = null;
+        playerHat.style.display = 'none';
+        notify("Аксессуар снят");
+    } else {
+        playerState.hat = id;
+        playerHat.textContent = item.icon;
+        playerHat.style.display = 'block';
+        notify(`🎩 «${item.name}» надет!`);
+        progressQuest('hat');
+    }
+    renderShop();
+}
+
+/* =========================================================
+   ИГРОТЕКА
+   ========================================================= */
+const funparkOverlay = document.getElementById('funpark-overlay');
+function openFunpark() { funparkOverlay.classList.add('show'); }
+function closeFunpark() {
+    if (spinning || slotSpinning || rbSpinning) return;
+    funparkOverlay.classList.remove('show');
+}
+function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.tab === name));
+    document.querySelectorAll('.tab-content').forEach(c =>
+        c.classList.toggle('active', c.id === 'tab-' + name));
+}
+
+function clampBet(v) {
+    v = Math.floor(Number(v) || 0);
+    if (v < 5) v = 5;
+    if (v > MAX_BET) v = MAX_BET;
+    if (v > rubies) v = Math.max(5, rubies);
+    return v;
+}
+function changeBet(type, delta) {
+    if (spinning || slotSpinning || rbSpinning) return;
+    if (type === 'wheel') wheelBet = clampBet(wheelBet + delta);
+    else if (type === 'slots') slotBet = clampBet(slotBet + delta);
+    else rbBet = clampBet(rbBet + delta);
+    updateUI();
+}
+function setBet(type, value) {
+    if (spinning || slotSpinning || rbSpinning) return;
+    const v = clampBet(value);
+    if (type === 'wheel') wheelBet = v;
+    else if (type === 'slots') slotBet = v;
+    else rbBet = v;
+    updateUI();
+}
+function maxBet(type) {
+    if (spinning || slotSpinning || rbSpinning) return;
+    const v = Math.min(MAX_BET, rubies);
+    if (type === 'wheel') wheelBet = Math.max(5, v);
+    else if (type === 'slots') slotBet = Math.max(5, v);
+    else rbBet = Math.max(5, v);
+    updateUI();
+}
+function locMult() { return LOCATIONS[currentLocation].mult; }
+
+/* КОЛЕСО */
+const SEGMENTS = [
+    { label: '×0',   mult: 0,   color: '#7f8c8d' },
+    { label: '×2',   mult: 2,   color: '#27ae60' },
+    { label: '×0',   mult: 0,   color: '#7f8c8d' },
+    { label: '×1.5', mult: 1.5, color: '#2980b9' },
+    { label: '×0',   mult: 0,   color: '#7f8c8d' },
+    { label: '×3',   mult: 3,   color: '#e67e22' },
+    { label: '×0',   mult: 0,   color: '#7f8c8d' },
+    { label: '×5',   mult: 5,   color: '#c0392b' },
+    { label: '×0',   mult: 0,   color: '#7f8c8d' },
+    { label: '×1.5', mult: 1.5, color: '#2980b9' },
+    { label: '×0',   mult: 0,   color: '#7f8c8d' },
+    { label: '×10',  mult: 10,  color: '#FFD700' },
+];
+const wheelEl = document.getElementById('wheel');
+const funparkResult = document.getElementById('funpark-result');
+const funparkHistory = document.getElementById('funpark-history');
+const history = [];
+
+function buildWheel() {
+    const n = SEGMENTS.length;
+    const step = 360 / n;
+    const stops = SEGMENTS.map((s, i) =>
+        `${s.color} ${i * step}deg ${(i + 1) * step}deg`).join(', ');
+    wheelEl.style.background = `conic-gradient(${stops})`;
+
+    wheelEl.querySelectorAll('.seg-label').forEach(e => e.remove());
+    const size = 220, r = 86, cx = size / 2, cy = size / 2;
+    SEGMENTS.forEach((s, i) => {
+        const angle = i * step + step / 2;
+        const rad = (angle - 90) * Math.PI / 180;
+        const x = cx + Math.cos(rad) * r;
+        const y = cy + Math.sin(rad) * r;
+        const label = document.createElement('div');
+        label.className = 'seg-label';
+        label.textContent = s.label;
+        label.style.cssText = `
+            position:absolute; left:${x}px; top:${y}px;
+            transform: translate(-50%,-50%) rotate(${angle}deg);
+            font-size:11px; font-weight:bold; color:#fff;
+            text-shadow: 1px 1px 2px #000; pointer-events:none;
+            width:32px; text-align:center;
+        `;
+        wheelEl.appendChild(label);
+    });
+
+    const legendMap = {};
+    SEGMENTS.forEach(s => { legendMap[s.label] = s.color; });
+    document.getElementById('wheel-legend').innerHTML = Object.entries(legendMap)
+        .map(([l, c]) => `<div class="legend-item"><div class="legend-dot" style="background:${c}"></div>${l}</div>`)
+        .join('');
+}
+buildWheel();
+
+function spinWheel() {
+    if (spinning || slotSpinning || rbSpinning) return;
+    if (wheelBet < 5) { notify("Минимальный билетик — 5 💎"); return; }
+    if (rubies < wheelBet) { funparkResult.textContent = "❌ Не хватает Румбиков!"; return; }
+
+    spinning = true;
+    rubies -= wheelBet;
+    updateUI();
+
+    const n = SEGMENTS.length;
+    const step = 360 / n;
+    const winIdx = Math.floor(Math.random() * n);
+    const seg = SEGMENTS[winIdx];
+    const targetAngle = 360 * 6 + (360 - (winIdx * step + step / 2));
+    currentRotation += targetAngle;
+
+    wheelEl.style.transform = `rotate(${currentRotation}deg)`;
+    funparkResult.textContent = '🎲 Крутим...';
+    funparkResult.classList.remove('win-flash');
+
+    setTimeout(() => {
+        const mult = locMult();
+        const winAmount = Math.floor(wheelBet * seg.mult * mult);
+        if (seg.mult === 0) {
+            funparkResult.textContent = `😢 Выпало ${seg.label}. Минус ${wheelBet} 💎`;
+            addHistory(`−${wheelBet} 💎`);
+        } else if (seg.mult === 10) {
+            rubies += winAmount;
+            funparkResult.textContent = `🎉🎉 СУПЕР ×10 ×${mult} = +${winAmount} 💎!`;
+            funparkResult.classList.add('win-flash');
+            addHistory(`+${winAmount} 💎`);
+            notify(`🎉 СУПЕР-ПРИЗ! +${winAmount} 💎`);
+        } else {
+            rubies += winAmount;
+            funparkResult.textContent = `🎉 Приз ×${seg.mult} ×${mult} = +${winAmount} 💎`;
+            funparkResult.classList.add('win-flash');
+            addHistory(`+${winAmount} 💎`);
+            notify(`+${winAmount} 💎`);
+        }
+        updateUI();
+        spinning = false;
+        progressQuest('wheel');
+    }, 4100);
+}
+
+function addHistory(entry) {
+    history.unshift(entry);
+    if (history.length > 5) history.pop();
+    funparkHistory.innerHTML = 'Последние: ' + history.join(' · ');
+}
+
+/* КРАСНОЕ/ЧЁРНОЕ */
+const RB_HISTORY = [];
+let pickedColor = null;
+
+function pickColor(color) {
+    if (rbSpinning || spinning || slotSpinning) return;
+    if (rbBet < 5) { notify("Минимальный билетик — 5 💎"); return; }
+    if (rubies < rbBet) {
+        document.getElementById('rb-result').textContent = "❌ Не хватает Румбиков!";
+        return;
+    }
+
+    pickedColor = color;
+    rbSpinning = true;
+    document.querySelectorAll('.rb-cell').forEach(c => {
+        c.classList.remove('picked');
+        c.classList.add('disabled');
+    });
+    document.querySelector(`.rb-cell.${color}`).classList.add('picked');
+
+    rubies -= rbBet;
+    updateUI();
+
+    document.getElementById('rb-spinning').style.display = 'block';
+    document.getElementById('rb-result').textContent = '🎲 Крутим...';
+
+    setTimeout(() => {
+        document.getElementById('rb-spinning').style.display = 'none';
+
+        const r = Math.random();
+        let result;
+        if (r < 0.47) result = 'red';
+        else if (r < 0.94) result = 'black';
+        else result = 'green';
+
+        RB_HISTORY.unshift(result);
+        if (RB_HISTORY.length > 8) RB_HISTORY.pop();
+        renderRBHistory();
+
+        const mult = locMult();
+        let baseWin = 0;
+        let message = '';
+
+        if (result === 'green') {
+            if (pickedColor === 'green') { baseWin = rbBet * 14; message = `🟢 ЗЕРО! ×14`; }
+            else message = `🟢 ЗЕРО! Не угадал`;
+        } else if (result === pickedColor) {
+            baseWin = rbBet * 2;
+            message = `${result === 'red' ? '🔴' : '⚫'} Угадал ×2`;
+        } else {
+            message = `${result === 'red' ? '🔴' : '⚫'} Не угадал`;
+        }
+
+        const winAmount = Math.floor(baseWin * mult);
+        const rbResult = document.getElementById('rb-result');
+
+        if (winAmount > 0) {
+            rubies += winAmount;
+            rbResult.textContent = `${message} → +${winAmount} 💎 (×${mult})`;
+            rbResult.classList.add('win-flash');
+            setTimeout(() => rbResult.classList.remove('win-flash'), 1200);
+            notify(`+${winAmount} 💎`);
+        } else {
+            rbResult.textContent = `${message} −${rbBet} 💎`;
+        }
+
+        updateUI();
+        rbSpinning = false;
+        pickedColor = null;
+        document.querySelectorAll('.rb-cell').forEach(c => c.classList.remove('disabled', 'picked'));
+        progressQuest('rb');
+    }, 1800);
+}
+
+function renderRBHistory() {
+    document.getElementById('rb-prev').innerHTML = RB_HISTORY
+        .map(c => `<div class="rb-dot ${c}"></div>`)
+        .join('');
+}
+
+/* СЛОТЫ */
+const SYMBOLS = [
+    { emoji: '🍒', name: 'cherry', weight: 30 },
+    { emoji: '🍋', name: 'lemon',  weight: 25 },
+    { emoji: '🍇', name: 'grape',  weight: 20 },
+    { emoji: '🔔', name: 'bell',   weight: 12 },
+    { emoji: '⭐', name: 'star',   weight: 8  },
+    { emoji: '💎', name: 'diamond',weight: 4  },
+    { emoji: '7️⃣', name: 'seven',  weight: 1  },
+];
+const PAYTABLE = { cherry: 3, lemon: 4, grape: 6, bell: 10, star: 15, diamond: 25, seven: 100 };
+const PAIR_PAY = { seven: 10, diamond: 5, star: 3, bell: 2 };
+const SYMBOL_HEIGHT = 110;
+const STRIP_LENGTH = 20;
+let slotTotalWin = 0;
+let slotSpins = 0;
+const reels = [
+    document.getElementById('reel0'),
+    document.getElementById('reel1'),
+    document.getElementById('reel2'),
+];
+const reelWrappers = document.querySelectorAll('.reel');
+const slotWinEl = document.getElementById('slot-win');
+const slotSpinsEl = document.getElementById('slot-spins');
+const slotResultEl = document.getElementById('funpark-result-slots');
+const slotSpinBtn = document.getElementById('slot-spin-btn');
+
+function pickSymbol() {
+    const total = SYMBOLS.reduce((s, x) => s + x.weight, 0);
+    let r = Math.random() * total;
+    for (const s of SYMBOLS) {
+        r -= s.weight;
+        if (r <= 0) return s;
+    }
+    return SYMBOLS[0];
+}
+function buildStrip(reelEl) {
+    reelEl.innerHTML = '';
+    for (let i = 0; i < STRIP_LENGTH + 1; i++) {
+        const s = pickSymbol();
+        const div = document.createElement('div');
+        div.className = 'reel-symbol';
+        div.textContent = s.emoji;
+        reelEl.appendChild(div);
+    }
+}
+reels.forEach(r => buildStrip(r));
+
+(function buildPaytable() {
+    const el = document.getElementById('slot-paytable');
+    el.innerHTML = SYMBOLS.map(s =>
+        `<div class="pay-row">${s.emoji}×3 → <b>×${PAYTABLE[s.name]}</b></div>`).join('');
+})();
+
+function animateReel(reelIndex, duration, finalSymbol, onDone) {
+    const reelEl = reels[reelIndex];
+    reelEl.innerHTML = '';
+    const count = STRIP_LENGTH * 3;
+    const symbols = [];
+    for (let i = 0; i < count - 1; i++) symbols.push(pickSymbol());
+    symbols.push(finalSymbol);
+    symbols.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'reel-symbol';
+        div.textContent = s.emoji;
+        reelEl.appendChild(div);
+    });
+    reelEl.style.transform = `translateY(0px)`;
+    const startTime = performance.now();
+    function frame(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const maxShift = (count - 1) * SYMBOL_HEIGHT;
+        reelEl.style.transform = `translateY(${-eased * maxShift}px)`;
+        if (progress < 1) requestAnimationFrame(frame);
+        else {
+            reelEl.innerHTML = '';
+            const div = document.createElement('div');
+            div.className = 'reel-symbol';
+            div.textContent = finalSymbol.emoji;
+            reelEl.appendChild(div);
+            reelEl.style.transform = 'translateY(0px)';
+            onDone && onDone();
+        }
+    }
+    requestAnimationFrame(frame);
+}
+
+function spinSlots() {
+    if (slotSpinning || spinning || rbSpinning) return;
+    if (slotBet < 5) { notify("Минимальный билетик — 5 💎"); return; }
+    if (rubies < slotBet) { slotResultEl.textContent = "❌ Не хватает Румбиков!"; return; }
+
+    slotSpinning = true;
+    slotSpinBtn.disabled = true;
+    slotResultEl.textContent = '🎰 Крутим...';
+    reelWrappers.forEach(r => r.classList.remove('winning'));
+
+    rubies -= slotBet;
+    updateUI();
+    slotSpins++;
+    slotSpinsEl.textContent = slotSpins;
+
+    const result = [pickSymbol(), pickSymbol(), pickSymbol()];
+    let done = 0;
+    const durations = [1200, 1700, 2300];
+    reels.forEach((_, i) => {
+        animateReel(i, durations[i], result[i], () => {
+            done++;
+            if (done === 3) finishSlots(result);
+        });
+    });
+}
+
+function finishSlots(result) {
+    const names = result.map(s => s.name);
+    const emojis = result.map(s => s.emoji);
+    let winAmount = 0;
+    let message = '';
+
+    if (names[0] === names[1] && names[1] === names[2]) {
+        const mult = PAYTABLE[names[0]];
+        winAmount = slotBet * mult;
+        message = `🎉 Три ${emojis[0]}! ×${mult}`;
+        reelWrappers.forEach(r => r.classList.add('winning'));
+    } else {
+        let pairName = null;
+        if (names[0] === names[1]) pairName = names[0];
+        else if (names[1] === names[2]) pairName = names[1];
+        else if (names[0] === names[2]) pairName = names[0];
+        if (pairName && PAIR_PAY[pairName]) {
+            const mult = PAIR_PAY[pairName];
+            winAmount = slotBet * mult;
+            message = `✨ Пара ${emojis[names.indexOf(pairName)]} ×${mult}`;
+            const indices = names.map((n, i) => n === pairName ? i : -1).filter(i => i >= 0);
+            indices.forEach(i => reelWrappers[i].classList.add('winning'));
+        }
+    }
+
+    const locMultiplier = locMult();
+    const finalWin = Math.floor(winAmount * locMultiplier);
+
+    if (finalWin > 0) {
+        rubies += finalWin;
+        slotTotalWin += finalWin;
+        slotResultEl.textContent = `${message} ×${locMultiplier} = +${finalWin} 💎`;
+        slotResultEl.classList.add('win-flash');
+        setTimeout(() => slotResultEl.classList.remove('win-flash'), 1200);
+        notify(`+${finalWin} 💎`);
+    } else {
+        slotResultEl.textContent = `😢 Не повезло... −${slotBet} 💎`;
+    }
+
+    slotWinEl.textContent = slotTotalWin;
+    updateUI();
+    slotSpinning = false;
+    slotSpinBtn.disabled = false;
+    progressQuest('slots');
+}
+
+/* =========================================================
+   ЭФФЕКТЫ
+   ========================================================= */
+function triggerFireworks() {
+    for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+            const fw = document.createElement('div');
+            fw.textContent = ['🎆','🎇','✨','💥'][Math.floor(Math.random()*4)];
+            fw.style.cssText = `
+                position:absolute;
+                left:${Math.random()*800+50}px;
+                top:${Math.random()*400+50}px;
+                font-size:${40+Math.random()*40}px;
+                z-index:350; pointer-events:none;
+                animation:fwPop 1s ease-out forwards;
+            `;
+            container.appendChild(fw);
+            setTimeout(() => fw.remove(), 1000);
+        }, i * 200);
+    }
+    if (!document.getElementById('fw-style')) {
+        const s = document.createElement('style');
+        s.id = 'fw-style';
+        s.textContent = `@keyframes fwPop {
+            0% { transform: scale(0.3); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }`;
+        document.head.appendChild(s);
+    }
+}
+
+let petEl = null;
+function spawnPet() {
+    if (petEl) return;
+    petEl = document.createElement('div');
+    petEl.textContent = '🐣';
+    petEl.style.cssText = `
+        position:absolute; font-size:32px;
+        left:160px; bottom:170px; z-index:9;
+        transition: left 0.6s ease, bottom 0.6s ease;
+    `;
+    container.appendChild(petEl);
+    setInterval(() => {
+        if (!petEl) return;
+        const pl = player.getBoundingClientRect();
+        const cr = container.getBoundingClientRect();
+        const scale = cr.width / W;
+        petEl.style.left = ((pl.left - cr.left) / scale + 30) + 'px';
+        petEl.style.bottom = ((cr.bottom - pl.bottom) / scale + 10) + 'px';
+    }, 500);
+    notify("🐣 Питомец появился!");
+}
+
+/* =========================================================
+   СТАРТ
+   ========================================================= */
+buildVisuals('meadow');
+renderNPCs('meadow');
+updateUI();
+renderRBHistory();
+</script>
+</body>
+</html>
